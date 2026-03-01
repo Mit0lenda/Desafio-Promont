@@ -1,0 +1,14 @@
+# n8n runtime
+n8n_data/
+*.sqlite
+*.log
+
+# Node
+node_modules/
+
+# Docker volumes
+*.wal
+*.shm
+
+# Env
+.env
