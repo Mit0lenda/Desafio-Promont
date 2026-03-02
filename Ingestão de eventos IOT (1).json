@@ -1,0 +1,177 @@
+{
+  "name": "Ingestão de eventos IOT",
+  "nodes": [
+    {
+      "parameters": {
+        "content": "Recebe eventos assíncronos e os armazena como fonte de verdade imutável.\nProcessamento e interpretação ocorrem apenas na camada de orquestração.",
+        "height": 400,
+        "width": 1568,
+        "color": 4
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        -48,
+        -160
+      ],
+      "typeVersion": 1,
+      "id": "f90ecd1f-3872-431f-94b8-66eecfa4195e",
+      "name": "Sticky Note"
+    },
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "iot-events",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2.1,
+      "position": [
+        0,
+        0
+      ],
+      "id": "57d33322-9c81-4756-a66c-0ecf135c6e61",
+      "name": "Receber Payload IoT",
+      "webhookId": "4f2efc28-127a-4c80-8268-240e7fd18fb0"
+    },
+    {
+      "parameters": {
+        "jsCode": "const output = [];\n\nfor (const item of items) {\n  const body = item.json.body;\n\n  // Se vier um único device (objeto)\n  const devices = Array.isArray(body) ? body : (body ? [body] : []);\n\n  for (const device of devices) {\n    // Aceita  dois formatos\n    const batch = device.event_batch || device.timeline;\n\n    if (!Array.isArray(batch)) continue;\n\n    for (const event of batch) {\n      output.push({\n        json: {\n          device_id: device.device_id,\n          timestamp: event.timestamp,\n          alarm_id: event.alarm_id,\n          value: event.value\n        }\n      });\n    }\n  }\n}\n\nreturn output;"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        640,
+        0
+      ],
+      "id": "583310e7-eeca-47e6-b39a-020a3093caf0",
+      "name": "Normalizar e Extrair Eventos"
+    },
+    {
+      "parameters": {
+        "tableId": "events_raw",
+        "fieldsUi": {
+          "fieldValues": [
+            {
+              "fieldId": "device_id",
+              "fieldValue": "={{ $json.device_id }}"
+            },
+            {
+              "fieldId": "timestamp",
+              "fieldValue": "={{ $json.timestamp }}"
+            },
+            {
+              "fieldId": "alarm_id",
+              "fieldValue": "={{ $json.alarm_id }}"
+            },
+            {
+              "fieldId": "value",
+              "fieldValue": "={{ $json.value }}"
+            }
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.supabase",
+      "typeVersion": 1,
+      "position": [
+        1328,
+        0
+      ],
+      "id": "298a106e-e54c-46c7-9e67-747a7efe76d4",
+      "name": "Persistir Evento Bruto (events_raw)",
+      "credentials": {
+        "supabaseApi": {
+          "id": "ibsVaCNrBt1RVxWA",
+          "name": "Supabase account"
+        }
+      }
+    }
+  ],
+  "pinData": {
+    "Receber Payload IoT": [
+      {
+        "json": {
+          "headers": {
+            "content-type": "application/json",
+            "user-agent": "PostmanRuntime/7.51.1",
+            "accept": "*/*",
+            "cache-control": "no-cache",
+            "postman-token": "ebd52883-3255-4a31-982a-bb584e73ef4f",
+            "host": "localhost:5679",
+            "accept-encoding": "gzip, deflate, br",
+            "connection": "keep-alive",
+            "content-length": "404"
+          },
+          "params": {},
+          "query": {
+            "Content-Type": "application/json"
+          },
+          "body": [
+            {
+              "device_id": "RS-CADEADO-01",
+              "timeline": [
+                {
+                  "timestamp": "2026-02-19T10:06:00Z",
+                  "alarm_id": 32,
+                  "value": 1
+                },
+                {
+                  "timestamp": "2026-02-19T10:02:00Z",
+                  "alarm_id": 33,
+                  "value": 0
+                },
+                {
+                  "timestamp": "2026-02-19T10:05:00Z",
+                  "alarm_id": 32,
+                  "value": 0
+                }
+              ]
+            }
+          ],
+          "webhookUrl": "http://localhost:5678/webhook/iot-events",
+          "executionMode": "production"
+        },
+        "pairedItem": {
+          "item": 0
+        }
+      }
+    ]
+  },
+  "connections": {
+    "Receber Payload IoT": {
+      "main": [
+        [
+          {
+            "node": "Normalizar e Extrair Eventos",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Normalizar e Extrair Eventos": {
+      "main": [
+        [
+          {
+            "node": "Persistir Evento Bruto (events_raw)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": true,
+  "settings": {
+    "executionOrder": "v1",
+    "availableInMCP": false,
+    "timeSavedMode": "fixed",
+    "callerPolicy": "workflowsFromSameOwner"
+  },
+  "versionId": "331e0426-4558-477a-a946-f7f82484ea91",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "664e1387e82c7357c00197dfc0063da7c80abeb43e062ee6a9a956c16d331c9e"
+  },
+  "id": "1m76ayqvny8UkRmxddfr5",
+  "tags": []
+}

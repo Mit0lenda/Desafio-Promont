@@ -55,6 +55,14 @@ Cadeado **aberto** (`32 = 1`) sem que tenha ocorrido **destravamento** (`33 = 1`
 #### Vulnerabilidade
 Cadeado **fechado** (`32 = 0`) enquanto permanece **destravado** (`33 = 1`).
 
+### Prioridade de Classificação
+
+Caso múltiplas condições ocorram simultaneamente:
+
+1. **INVASAO** tem prioridade máxima
+2. **VULNERABILIDADE** é considerada apenas se não houver INVASAO
+3. Caso contrário, **NORMAL**
+
 ---
 
 ## Arquitetura
@@ -152,7 +160,10 @@ Isso garante consistência mesmo quando:
 
 ## Uso da IA
 
-A IA atua como **camada adicional de validação**.
+**A decisão principal é tomada por regras determinísticas.  
+A IA atua exclusivamente como camada adicional de validação e geração de justificativa textual.**
+
+A IA fornece:
 
 ### Entrada fornecida:
 - Timeline ordenada
