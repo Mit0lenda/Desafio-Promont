@@ -160,29 +160,18 @@ Isso garante consistência mesmo quando:
 
 ## Uso da IA
 
-**A decisão principal é tomada por regras determinísticas.  
-A IA atua exclusivamente como camada adicional de validação e geração de justificativa textual.**
+A reconstrução de estado e a detecção inicial de inconsistências são realizadas por **regras determinísticas**, garantindo consistência física e previsibilidade na análise dos eventos.
 
-A IA fornece:
+A IA atua como **mecanismo de julgamento contextual** do cenário consolidado, sendo responsável por:
 
-### Entrada fornecida:
-- Timeline ordenada
-- Estado final consolidado
-- Flags determinísticas
-- Resumo estruturado
+- Classificar o tipo final do evento (`INVASAO | VULNERABILIDADE | NORMAL`)
+- Determinar se a situação exige notificação de segurança
+- Gerar justificativa técnica estruturada
+- Informar nível de confiança da decisão
 
-### Saída esperada:
-```json
-{
-  "incident": true,
-  "type": "INVASAO | VULNERABILIDADE | NORMAL",
-  "confidence": 0.98,
-  "justification": "string",
-  "requires_notification": true
-}
-```
+A **decisão persistida no sistema é baseada na resposta estruturada da IA**.
 
-**Importante:** A IA não substitui as regras determinísticas. Ela valida coerência contextual e reforça a decisão.
+A IA não substitui as regras determinísticas de reconstrução de estado, mas complementa a análise com interpretação contextual.
 
 ---
 
@@ -201,6 +190,97 @@ Conforme exigido no desafio, são persistidos:
 Estado consolidado atual do dispositivo (upsert por `device_id`).
 
 Todos os eventos processados são marcados como `processed = true`, garantindo **idempotência**.
+
+---
+
+## Estrutura do Banco de Dados
+
+### events_raw
+
+Armazena os eventos brutos recebidos via webhook. Representa a **fonte de verdade imutável** do sistema.
+
+**Campos:**
+
+| Campo | Tipo | Descrição |
+|-------|------|----------|
+| `id` | uuid | Identificador único (PK) |
+| `device_id` | text | ID do dispositivo |
+| `timestamp` | timestamptz | Timestamp do evento (ordem real) |
+| `alarm_id` | integer | Tipo de sensor (32 ou 33) |
+| `value` | integer | Estado do sensor (0 ou 1) |
+| `processed` | boolean | Flag de processamento |
+| `created_at` | timestamptz | Data de recebimento |
+
+**DDL:**
+```sql
+create table public.events_raw (
+  id uuid not null default gen_random_uuid (),
+  device_id text null,
+  timestamp timestamp with time zone null,
+  alarm_id integer null,
+  value integer null,
+  processed boolean null default false,
+  created_at timestamp with time zone null default now(),
+  constraint events_raw_pkey primary key (id)
+);
+```
+
+---
+
+### device_state
+
+Mantém o **estado consolidado atual** do dispositivo (upsert por `device_id`).
+
+**Campos:**
+
+| Campo | Tipo | Descrição |
+|-------|------|----------|
+| `device_id` | text | ID do dispositivo (PK) |
+| `is_closed` | boolean | Se o cadeado está fechado |
+| `is_locked` | boolean | Se o cadeado está travado |
+| `updated_at` | timestamptz | Última atualização |
+
+**DDL:**
+```sql
+create table public.device_state (
+  device_id text not null,
+  is_closed boolean null,
+  is_locked boolean null,
+  updated_at timestamp with time zone null,
+  constraint device_state_pkey primary key (device_id),
+  constraint device_state_device_id_key unique (device_id)
+);
+```
+
+---
+
+### diagnostics
+
+Histórico das decisões geradas pela IA para **auditoria e rastreabilidade**.
+
+**Campos:**
+
+| Campo | Tipo | Descrição |
+|-------|------|----------|
+| `id` | uuid | Identificador único (PK) |
+| `device_id` | text | ID do dispositivo analisado |
+| `type` | text | Tipo de classificação (INVASAO, VULNERABILIDADE, NORMAL) |
+| `is_incident` | boolean | Se é incidente |
+| `explanation` | text | Justificativa técnica da IA |
+| `created_at` | timestamptz | Data da análise |
+
+**DDL:**
+```sql
+create table public.diagnostics (
+  id uuid not null default gen_random_uuid (),
+  device_id text null,
+  type text null,
+  is_incident boolean null,
+  explanation text null,
+  created_at timestamp with time zone null default now(),
+  constraint diagnostics_pkey primary key (id)
+);
+```
 
 ---
 

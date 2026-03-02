@@ -252,11 +252,11 @@
           "parameters": [
             {
               "name": "apikey",
-              "value": "sb_secret_sqsUjX-i4RgVzVskEBO67g_Ks11uXPN"
+              "value": "${SUPABASE_API_KEY}"
             },
             {
               "name": "Authorization",
-              "value": "Bearer sb_secret_sqsUjX-i4RgVzVskEBO67g_Ks11uXPN"
+              "value": "Bearer ${SUPABASE_API_KEY}"
             },
             {
               "name": "Content-Type",
